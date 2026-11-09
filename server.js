@@ -5,12 +5,11 @@ const express = require('express'), crypto = require('crypto'), fs = require('fs
 const mod = require('@kkiapay-org/nodejs-sdk');
 const kkiapay = mod.default || mod;
 
-const { PORT = 3000, KKIAPAY_PUBLIC_KEY, KKIAPAY_PRIVATE_KEY, KKIAPAY_SECRET, KKIAPAY_SANDBOX = 'true', TOKEN_SECRET, KKIAPAY_WEBHOOK_SECRET } = process.env;
-if (!KKIAPAY_PUBLIC_KEY || !KKIAPAY_PRIVATE_KEY || !KKIAPAY_SECRET || !TOKEN_SECRET) {
-  console.error('Variables manquantes : copiez .env.example vers .env et remplissez-le.'); process.exit(1);
-}
+const { PORT = 3000, KKIAPAY_PUBLIC_KEY, KKIAPAY_PRIVATE_KEY, KKIAPAY_SECRET, KKIAPAY_SANDBOX = 'true', KKIAPAY_WEBHOOK_SECRET } = process.env;
+const TOKEN_SECRET = process.env.TOKEN_SECRET || crypto.randomBytes(32).toString('hex');
+const paymentConfigured = Boolean(KKIAPAY_PUBLIC_KEY && KKIAPAY_PRIVATE_KEY && KKIAPAY_SECRET);
 const PRICE = 500, TOKEN_TTL = 24 * 3600 * 1000;
-const k = kkiapay({ publickey: KKIAPAY_PUBLIC_KEY, privatekey: KKIAPAY_PRIVATE_KEY, secretkey: KKIAPAY_SECRET, sandbox: KKIAPAY_SANDBOX === 'true' });
+const k = paymentConfigured ? kkiapay({ publickey: KKIAPAY_PUBLIC_KEY, privatekey: KKIAPAY_PRIVATE_KEY, secretkey: KKIAPAY_SECRET, sandbox: KKIAPAY_SANDBOX === 'true' }) : null;
 
 // Transactions déjà consommées (1 paiement = 1 carte). Un fichier suffit pour démarrer ; passez à une vraie base ensuite.
 const USED = path.join(__dirname, 'used.json');
@@ -25,6 +24,7 @@ app.use(express.json({ limit: '10kb' }));
 
 // 1) Après le widget : vérifier la transaction chez KKiaPay, puis délivrer un jeton signé
 app.post('/api/verify', async (req, res) => {
+  if (!paymentConfigured) return res.status(503).json({ error: 'Paiement temporairement indisponible' });
   const { transactionId, cardId } = req.body || {};
   if (!/^[\w-]{3,64}$/.test(String(transactionId)) || !/^[a-z]{3,20}$/.test(String(cardId)))
     return res.status(400).json({ error: 'Requête invalide' });
@@ -49,6 +49,7 @@ app.post('/api/verify', async (req, res) => {
 // L'en-tête x-kkiapay-secret doit correspondre au "hash secret" saisi dans le tableau de bord.
 // On ne croit pas le contenu du message : on re-vérifie la transaction auprès de KKiaPay.
 app.post('/api/webhook', async (req, res) => {
+  if (!paymentConfigured) return res.sendStatus(503);
   const got = Buffer.from(String(req.get('x-kkiapay-secret') || '')), want = Buffer.from(KKIAPAY_WEBHOOK_SECRET || '');
   if (!want.length || got.length !== want.length || !crypto.timingSafeEqual(got, want)) return res.sendStatus(401);
   const { event, transactionId } = req.body || {};
