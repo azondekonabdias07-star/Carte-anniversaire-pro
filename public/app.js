@@ -107,7 +107,9 @@ const WM = 'url("data:image/svg+xml;utf8,' + encodeURIComponent(
 
 /* ---------- 3. RENDU & GRILLE ---------- */
 function buildCard(id, watermark) {
-  const tpl = STYLES.find(s => s.id === id), d = state.data, p = PALETTES[d.palette];
+  const tpl = STYLES.find(s => s.id === id) || STYLES[0];
+  const d = state.data || { name: '', age: '', message: 'Joyeux anniversaire !', photos: [], palette: 'rose' };
+  const p = PALETTES[d.palette] || PALETTES.rose;
   const el = document.createElement('div');
   el.style.cssText = `width:${CARD_W}px;height:${CARD_H}px;position:relative;transform-origin:top left`;
   el.innerHTML = tpl.render(d, p) + (watermark
