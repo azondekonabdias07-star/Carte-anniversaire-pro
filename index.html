@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Cartes d’anniversaire</title>
+  <meta name="theme-color" content="#FF4F8B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <!-- Polices : une pour l'interface, les autres pour les cartes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Montserrat:wght@500;800&family=Pacifico&family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind (CDN : pratique pour démarrer, à compiler pour la production) -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Export image / PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    body { font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+    .field { width:100%; border-radius:14px; border:1.5px solid #E5DAF7; background:#fff; padding:12px 14px; outline:none; }
+    .field:focus { border-color:#FF4F8B; box-shadow:0 0 0 3px #FF4F8B33; }
+    .chip[aria-pressed="true"] { outline:3px solid #2A1B4D; outline-offset:2px; }
+    .seg[aria-pressed="true"] { background:#2A1B4D; color:#fff; }
+    @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+  </style>
+</head>
+
+<body class="bg-[#FBF7FF] text-[#2A1B4D] min-h-screen">
+  <header class="max-w-3xl mx-auto px-5 pt-7 pb-2">
+    <h1 class="text-3xl font-extrabold leading-tight">Cartes d’anniversaire</h1>
+    <p class="text-sm opacity-70 mt-1">Créez, comparez 4 styles, téléchargez en HD pour 500 FCFA.</p>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-5 pb-48">
+
+    <!-- ========== VUE 1 : FORMULAIRE ========== -->
+    <section id="view-form">
+      <form id="form" class="space-y-5 mt-5" autocomplete="off">
+        <label class="block">
+          <span class="font-semibold">Prénom du fêté</span>
+          <input id="f-name" class="field mt-1" required maxlength="24" placeholder="Aminata">
+        </label>
+        <label class="block">
+          <span class="font-semibold">Âge</span>
+          <input id="f-age" type="number" min="1" max="120" inputmode="numeric" class="field mt-1" placeholder="25">
+        </label>
+        <label class="block">
+          <span class="font-semibold">Message</span>
+          <textarea id="f-msg" rows="3" maxlength="140" class="field mt-1" placeholder="Que cette année t’apporte joie et réussite !"></textarea>
+        </label>
+
+        <div>
+          <span class="font-semibold">Couleurs</span>
+          <div id="palettes" class="flex gap-3 mt-2"></div>
+        </div>
+
+        <div>
+          <span class="font-semibold">Photos (la première sera la photo principale)</span>
+          <input id="f-photos" type="file" accept="image/*" multiple class="field mt-1 text-sm">
+          <div id="thumbs" class="flex gap-2 mt-2 flex-wrap"></div>
+        </div>
+
+        <button class="w-full rounded-2xl bg-[#FF4F8B] text-white font-extrabold py-4 text-lg active:scale-[.99]">
+          Créer mes cartes
+        </button>
+      </form>
+    </section>
+
+    <!-- ========== VUE 2 : PROPOSITIONS ========== -->
+    <section id="view-results" hidden>
+      <div class="flex items-center justify-between mt-5">
+        <button id="btn-back" class="font-semibold underline underline-offset-4">Modifier mes infos</button>
+        <p class="text-sm opacity-70">Touchez une carte pour la choisir</p>
+      </div>
+      <div id="grid" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4"></div>
+    </section>
+  </main>
+
+  <!-- ========== PANNEAU D'ACHAT / TÉLÉCHARGEMENT ========== -->
+  <aside id="sheet" hidden class="fixed inset-x-0 bottom-0 z-30 bg-white rounded-t-3xl shadow-[0_-10px_40px_#2A1B4D22] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+    <div class="max-w-3xl mx-auto">
+      <div class="flex items-center justify-between">
+        <p class="font-extrabold text-lg">Style <span id="sheet-style"></span></p>
+        <button id="sheet-close" class="text-2xl leading-none px-2" aria-label="Fermer">×</button>
+      </div>
+      <div id="formats" class="flex gap-2 mt-3"></div>
+      <button id="sheet-action" class="w-full mt-4 rounded-2xl bg-[#2A1B4D] text-white font-extrabold py-4"></button>
+    </div>
+  </aside>
+
+  <!-- ========== MODALE DE PAIEMENT ========== -->
+  <div id="pay" hidden class="fixed inset-0 z-40 bg-[#2A1B4D]/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <form id="pay-form" class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4">
+      <div class="flex justify-between items-start">
+        <div>
+          <p class="font-extrabold text-xl">Débloquer la carte HD</p>
+          <p class="text-sm opacity-70">PNG, JPEG et PDF sans filigrane</p>
+        </div>
+        <button type="button" id="pay-close" class="text-2xl leading-none" aria-label="Fermer">×</button>
+      </div>
+      <div id="ops" class="grid grid-cols-2 gap-2"></div>
+      <input id="pay-phone" class="field" inputmode="tel" placeholder="Numéro Mobile Money (ex. 01 97 00 00 00)">
+      <p class="text-xs opacity-60">Mode démo : aucun argent n’est débité.</p>
+      <p id="pay-msg" class="text-sm text-red-600 min-h-[1.25rem]" role="alert"></p>
+      <button id="pay-submit" class="w-full rounded-2xl bg-[#FF4F8B] text-white font-extrabold py-4">Payer 500 FCFA</button>
+    </form>
+  </div>
+
+  <div id="toast" hidden class="fixed top-4 inset-x-4 z-50 mx-auto max-w-sm rounded-2xl bg-[#2A1B4D] text-white text-center py-3 font-semibold"></div>
+
+  <!-- Zone hors écran utilisée pour l'export HD (rendu sans filigrane) -->
+  <div id="offscreen" style="position:fixed;left:-9999px;top:0;"></div>
+
+  <script src="https://cdn.kkiapay.me/k.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

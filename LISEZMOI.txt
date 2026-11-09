@@ -1,0 +1,15 @@
+CARTES D'ANNIVERSAIRE — paiement KKiaPay
+
+1. npm install
+2. Copier .env.example en .env et remplir les 4 clés (KKiaPay Sandbox d'abord)
+3. Dans public/app.js, ligne CONFIG : mettre la clé PUBLIQUE KKiaPay (même valeur que KKIAPAY_PUBLIC_KEY)
+4. npm start  ->  http://localhost:3000
+5. Tester avec les numéros de test KKiaPay (Sandbox), puis passer KKIAPAY_SANDBOX=false et SANDBOX:false dans app.js
+
+Sans clé publique dans app.js, l'app reste en mode démo (faux paiement).
+Hébergement : n'importe quel hébergeur Node.js en HTTPS (Render, Railway, VPS...). HTTPS est obligatoire pour la PWA.
+
+WEBHOOK (optionnel mais recommandé)
+- Dans le tableau de bord KKiaPay > Développeurs > Webhooks : URL = https://votre-domaine/api/webhook,
+  événement "transaction.success", et un "hash secret" à recopier dans KKIAPAY_WEBHOOK_SECRET.
+- Test local : exposez le port avec un tunnel HTTPS (ex. ngrok) ; KKiaPay ne peut pas appeler localhost.

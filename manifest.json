@@ -1,0 +1,17 @@
+{
+  "name": "Cartes d’anniversaire",
+  "short_name": "Cartes",
+  "description": "Créez et téléchargez de belles cartes d’anniversaire personnalisées.",
+  "lang": "fr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7FF",
+  "theme_color": "#FF4F8B",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
