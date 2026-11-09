@@ -1,7 +1,7 @@
 /* Service worker : l'app fonctionne hors ligne une fois chargée.
    - Fichiers de l'app : mis en cache à l'installation
    - CDN (Tailwind, html2canvas, polices) : mis en cache à la première utilisation */
-const CACHE = 'cartes-v2';
+const CACHE = 'cartes-v3';
 const SHELL = ['./', './index.html', './app.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
